@@ -66,7 +66,10 @@ selected_origin_label = st.selectbox("Start Location", list(START_LOCATIONS.keys
 origin = START_LOCATIONS[selected_origin_label]
 
 st.markdown("### Enter Stops (one per line, format: LOC#, Address)")
-stops_input = st.text_area("Stops Input", "Drop locations and address here in the format above")
+stops_input = st.text_area(
+    "Stops Input",
+    placeholder="Drop locations and address here in the format: LOC#, Address"
+)
 
 if st.button("Generate Schedule"):
     # Parse input stops
