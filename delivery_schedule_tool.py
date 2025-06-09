@@ -2,7 +2,6 @@ import streamlit as st
 import pandas as pd
 from datetime import datetime, timedelta
 import io
-import openai
 import os
 
 # Constants
@@ -11,7 +10,7 @@ STOP_DURATION = timedelta(minutes=45)
 DRIVE_TOLERANCE = timedelta(minutes=30)
 MEAL_BREAK = timedelta(hours=2)
 
-# Estimate drive time using OpenAI (fallback simple estimator)
+# Estimate drive time using Google Maps API (fallback simple estimator)
 def estimate_drive_time(from_address, to_address):
     try:
         import googlemaps
