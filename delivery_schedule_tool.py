@@ -6,9 +6,18 @@ import os
 
 # Constants
 ORIGIN = "1 Tungsten Way, Duncan, SC"
-STOP_DURATION = timedelta(minutes=45)
-DRIVE_TOLERANCE = timedelta(minutes=30)
+STOP_DURATION = timedelta(minutes=15)  # Updated from 45 to 15 minutes
 MEAL_BREAK = timedelta(hours=2)
+
+# Round to nearest 15 minutes
+def round_to_nearest_15(dt):
+    discard = timedelta(minutes=dt.minute % 15,
+                        seconds=dt.second,
+                        microseconds=dt.microsecond)
+    dt -= discard
+    if discard >= timedelta(minutes=7.5):
+        dt += timedelta(minutes=15)
+    return dt
 
 # Estimate drive time using Google Maps API (required)
 def estimate_drive_time(from_address, to_address):
@@ -20,8 +29,11 @@ def estimate_drive_time(from_address, to_address):
     gmaps = googlemaps.Client(key=api_key)
     directions = gmaps.directions(from_address, to_address, mode="driving")
     seconds = directions[0]['legs'][0]['duration']['value']
-    st.write(f"Driving from {from_address} to {to_address} took {seconds // 60} minutes")
-    return timedelta(seconds=seconds) + DRIVE_TOLERANCE
+    base_drive_time = timedelta(seconds=seconds)
+    buffer_time = base_drive_time * 0.3  # 30% slow truck buffer
+    total_drive_time = base_drive_time + buffer_time
+    st.write(f"Driving from {from_address} to {to_address} took {int(total_drive_time.total_seconds() // 60)} minutes (including buffer)")
+    return total_drive_time
 
 # Streamlit UI
 st.title("Delivery Route Scheduler")
@@ -55,7 +67,7 @@ if st.button("Generate Schedule"):
     # Generate schedule
     for stop in stops:
         drive_time = estimate_drive_time(current_location, stop['Address'])
-        arrival_time = current_time + drive_time
+        arrival_time = round_to_nearest_15(current_time + drive_time)
         schedule.append({
             "Route": route_name,
             "Loc #": stop['Loc #'],
@@ -68,7 +80,7 @@ if st.button("Generate Schedule"):
 
     # Add return to origin
     return_drive = estimate_drive_time(current_location, ORIGIN)
-    return_time = current_time + return_drive + MEAL_BREAK
+    return_time = round_to_nearest_15(current_time + return_drive + MEAL_BREAK)
     schedule.append({
         "Route": route_name,
         "Loc #": "RETURN",
