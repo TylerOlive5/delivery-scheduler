@@ -32,8 +32,25 @@ def estimate_drive_time(from_address, to_address):
     base_drive_time = timedelta(seconds=seconds)
     buffer_time = base_drive_time * 0.3  # 30% slow truck buffer
     total_drive_time = base_drive_time + buffer_time
-    st.write(f"Driving from {from_address} to {to_address} took {int(total_drive_time.total_seconds() // 60)} minutes (including buffer)")
     return total_drive_time
+
+# Optimize stop order using Google Maps API
+def optimize_stop_order(origin, stop_addresses):
+    import googlemaps
+    api_key = os.getenv("GOOGLE_MAPS_API_KEY")
+    if not api_key:
+        st.error("Google Maps API key not found. Please set the GOOGLE_MAPS_API_KEY environment variable.")
+        st.stop()
+    gmaps = googlemaps.Client(key=api_key)
+    directions_result = gmaps.directions(
+        origin,
+        origin,
+        mode="driving",
+        waypoints=["optimize:true"] + stop_addresses,
+        optimize_waypoints=True
+    )
+    order = directions_result[0]['waypoint_order']
+    return order
 
 # Streamlit UI
 st.title("Delivery Route Scheduler")
@@ -51,12 +68,18 @@ FSC2503, 1500 US 17 N, Mt Pleasant, SC 29464
 if st.button("Generate Schedule"):
     # Parse input stops
     stops = []
+    addresses = []
     for line in stops_input.strip().splitlines():
         if line.strip():
             parts = line.strip().split(",", 1)
             if len(parts) == 2:
                 loc, addr = parts
                 stops.append({"Loc #": loc.strip(), "Address": addr.strip()})
+                addresses.append(addr.strip())
+
+    # Optimize stop order
+    order = optimize_stop_order(ORIGIN, addresses)
+    ordered_stops = [stops[i] for i in order]
 
     # Initialize schedule
     departure_datetime = datetime.combine(datetime.today(), departure_time)
@@ -65,7 +88,7 @@ if st.button("Generate Schedule"):
     schedule = []
 
     # Generate schedule
-    for stop in stops:
+    for stop in ordered_stops:
         drive_time = estimate_drive_time(current_location, stop['Address'])
         arrival_time = round_to_nearest_15(current_time + drive_time)
         schedule.append({
