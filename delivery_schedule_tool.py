@@ -5,7 +5,11 @@ import io
 import os
 
 # Constants
-ORIGIN = "1 Tungsten Way, Duncan, SC"
+START_LOCATIONS = [
+    "22064 - Duncan Warehouse - 1 Tungsten Way, Duncan SC 29334",
+    "1000 Example Blvd, Charlotte, NC",
+    "500 Distribution Dr, Atlanta, GA"
+]
 STOP_DURATION = timedelta(minutes=15)  # Updated from 45 to 15 minutes
 MEAL_BREAK = timedelta(hours=2)
 
@@ -57,6 +61,7 @@ st.title("Delivery Route Scheduler")
 
 route_name = st.text_input("Route Name", "TNT9999")
 departure_time = st.time_input("Departure Time", datetime.strptime("08:00", "%H:%M").time())
+origin = st.selectbox("Start Location", START_LOCATIONS)
 
 st.markdown("### Enter Stops (one per line, format: LOC#, Address)")
 stops_input = st.text_area("Stops Input", 
@@ -78,13 +83,13 @@ if st.button("Generate Schedule"):
                 addresses.append(addr.strip())
 
     # Optimize stop order
-    order = optimize_stop_order(ORIGIN, addresses)
+    order = optimize_stop_order(origin, addresses)
     ordered_stops = [stops[i] for i in order]
 
     # Initialize schedule
     departure_datetime = datetime.combine(datetime.today(), departure_time)
     current_time = departure_datetime
-    current_location = ORIGIN
+    current_location = origin
     schedule = []
 
     # Generate schedule
@@ -103,13 +108,13 @@ if st.button("Generate Schedule"):
         current_location = stop['Address']
 
     # Add return to origin
-    base_return_time, max_return_time = estimate_drive_time(current_location, ORIGIN)
+    base_return_time, max_return_time = estimate_drive_time(current_location, origin)
     min_return = round_to_nearest_15(current_time + base_return_time + MEAL_BREAK)
     max_return = round_to_nearest_15(current_time + max_return_time + MEAL_BREAK)
     schedule.append({
         "Route": route_name,
         "Loc #": "RETURN",
-        "Address": ORIGIN,
+        "Address": origin,
         "Arrival Time": min_return.strftime("%I:%M %p"),
         "Delivery Window": f"{min_return.strftime('%I:%M %p')} – {max_return.strftime('%I:%M %p')}"
     })
