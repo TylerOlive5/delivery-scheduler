@@ -2,6 +2,8 @@ import streamlit as st
 import pandas as pd
 from datetime import datetime, timedelta
 import io
+import openai
+import os
 
 # Constants
 ORIGIN = "1 Tungsten Way, Duncan, SC"
@@ -9,35 +11,18 @@ STOP_DURATION = timedelta(minutes=45)
 DRIVE_TOLERANCE = timedelta(minutes=30)
 MEAL_BREAK = timedelta(hours=2)
 
-# Realistic drive time estimator
-
+# Estimate drive time using OpenAI (fallback simple estimator)
 def estimate_drive_time(from_address, to_address):
-    from_lower = from_address.lower()
-    to_lower = to_address.lower()
-
-    # TNT1701
-    if "duncan" in from_lower and "lilburn" in to_lower:
-        return timedelta(hours=2, minutes=20) + DRIVE_TOLERANCE
-    elif "lilburn" in from_lower and "east point" in to_lower:
-        return timedelta(minutes=35) + DRIVE_TOLERANCE
-    elif "east point" in from_lower and "college park" in to_lower:
-        return timedelta(minutes=25) + DRIVE_TOLERANCE
-    elif "college park" in from_lower and "duncan" in to_lower:
-        return timedelta(hours=3, minutes=20) + MEAL_BREAK
-
-    # TNT1702
-    elif "duncan" in from_lower and "suwanee" in to_lower:
-        return timedelta(hours=2, minutes=0) + DRIVE_TOLERANCE
-    elif "suwanee" in from_lower and "lawrenceville" in to_lower:
-        return timedelta(minutes=15) + DRIVE_TOLERANCE
-    elif "lawrenceville" in from_lower and "winder" in to_lower:
-        return timedelta(minutes=35) + DRIVE_TOLERANCE
-    elif "winder" in from_lower and "duncan" in to_lower:
-        return timedelta(hours=2, minutes=30) + MEAL_BREAK
-
-    # Fallback
-    else:
-        return timedelta(hours=1) + DRIVE_TOLERANCE
+    try:
+        import googlemaps
+        gmaps = googlemaps.Client(key=os.getenv("GOOGLE_MAPS_API_KEY"))
+        directions = gmaps.directions(from_address, to_address, mode="driving")
+        seconds = directions[0]['legs'][0]['duration']['value']
+        return timedelta(seconds=seconds) + DRIVE_TOLERANCE
+    except Exception:
+        # Fallback: Estimate by character difference * 2 min
+        base_minutes = abs(len(from_address) - len(to_address)) * 2
+        return timedelta(minutes=base_minutes) + DRIVE_TOLERANCE
 
 # Streamlit UI
 st.title("Delivery Route Scheduler")
