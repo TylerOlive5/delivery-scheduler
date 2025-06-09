@@ -73,7 +73,7 @@ if st.button("Generate Schedule"):
     st.dataframe(df)
 
     output = io.BytesIO()
-    with pd.ExcelWriter(output, engine='openpyxl', mode='xlsx') as writer:
+    with pd.ExcelWriter(output, engine='openpyxl') as writer:
         df.to_excel(writer, index=False, sheet_name="Schedule")
     output.seek(0)
 
