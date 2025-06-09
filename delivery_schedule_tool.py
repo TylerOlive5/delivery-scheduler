@@ -9,10 +9,23 @@ STOP_DURATION = timedelta(minutes=45)
 DRIVE_TOLERANCE = timedelta(minutes=30)
 MEAL_BREAK = timedelta(hours=2)
 
-# Mock drive time estimator
+# Realistic drive time estimator
+
 def estimate_drive_time(from_address, to_address):
-    base_minutes = abs(len(from_address) - len(to_address)) * 2
-    return timedelta(minutes=base_minutes) + DRIVE_TOLERANCE
+    from_lower = from_address.lower()
+    to_lower = to_address.lower()
+
+    # Specific known routes (adjust these as needed)
+    if "duncan" in from_lower and "lilburn" in to_lower:
+        return timedelta(hours=2, minutes=20) + DRIVE_TOLERANCE
+    elif "lilburn" in from_lower and "east point" in to_lower:
+        return timedelta(minutes=35) + DRIVE_TOLERANCE
+    elif "east point" in from_lower and "college park" in to_lower:
+        return timedelta(minutes=25) + DRIVE_TOLERANCE
+    elif "college park" in from_lower and "duncan" in to_lower:
+        return timedelta(hours=3, minutes=20) + MEAL_BREAK
+    else:
+        return timedelta(hours=1) + DRIVE_TOLERANCE
 
 # Streamlit UI
 st.title("Delivery Route Scheduler")
