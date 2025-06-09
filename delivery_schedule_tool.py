@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 from datetime import datetime, timedelta
+import io
 
 # Constants
 ORIGIN = "1 Tungsten Way, Duncan, SC"
@@ -71,10 +72,14 @@ if st.button("Generate Schedule"):
     st.write("### Generated Schedule")
     st.dataframe(df)
 
-    excel_output = df.to_excel(index=False, engine='openpyxl')
+    output = io.BytesIO()
+    with pd.ExcelWriter(output, engine='openpyxl', mode='xlsx') as writer:
+        df.to_excel(writer, index=False, sheet_name="Schedule")
+    output.seek(0)
+
     st.download_button(
         label="Download Schedule as Excel",
-        data=excel_output,
+        data=output,
         file_name=f"{route_name}_schedule.xlsx",
         mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     )
