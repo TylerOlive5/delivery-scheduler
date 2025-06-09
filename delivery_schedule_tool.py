@@ -5,11 +5,12 @@ import io
 import os
 
 # Constants
-START_LOCATIONS = [
-    "22064 - Duncan Warehouse - 1 Tungsten Way, Duncan SC 29334",
-    "1000 Example Blvd, Charlotte, NC",
-    "500 Distribution Dr, Atlanta, GA"
-]
+START_LOCATIONS = {
+    "22064 - Duncan Warehouse - 1 Tungsten Way, Duncan SC 29334": "1 Tungsten Way, Duncan SC 29334",
+    "22060 - Florence Warehouse - 4511 Helton Dr Florence AL, 35630": "4511 Helton Dr Florence AL, 35630",
+    "1000 Example Blvd, Charlotte, NC": "1000 Example Blvd, Charlotte, NC",
+    "500 Distribution Dr, Atlanta, GA": "500 Distribution Dr, Atlanta, GA"
+}
 STOP_DURATION = timedelta(minutes=15)  # Updated from 45 to 15 minutes
 MEAL_BREAK = timedelta(hours=2)
 
@@ -61,7 +62,8 @@ st.title("Delivery Route Scheduler")
 
 route_name = st.text_input("Route Name", "TNT9999")
 departure_time = st.time_input("Departure Time", datetime.strptime("08:00", "%H:%M").time())
-origin = st.selectbox("Start Location", START_LOCATIONS)
+selected_origin_label = st.selectbox("Start Location", list(START_LOCATIONS.keys()))
+origin = START_LOCATIONS[selected_origin_label]
 
 st.markdown("### Enter Stops (one per line, format: LOC#, Address)")
 stops_input = st.text_area("Stops Input", 
