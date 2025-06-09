@@ -10,18 +10,18 @@ STOP_DURATION = timedelta(minutes=45)
 DRIVE_TOLERANCE = timedelta(minutes=30)
 MEAL_BREAK = timedelta(hours=2)
 
-# Estimate drive time using Google Maps API (fallback simple estimator)
+# Estimate drive time using Google Maps API (required)
 def estimate_drive_time(from_address, to_address):
-    try:
-        import googlemaps
-        gmaps = googlemaps.Client(key=os.getenv("GOOGLE_MAPS_API_KEY"))
-        directions = gmaps.directions(from_address, to_address, mode="driving")
-        seconds = directions[0]['legs'][0]['duration']['value']
-        return timedelta(seconds=seconds) + DRIVE_TOLERANCE
-    except Exception:
-        # Fallback: Estimate by character difference * 2 min
-        base_minutes = abs(len(from_address) - len(to_address)) * 2
-        return timedelta(minutes=base_minutes) + DRIVE_TOLERANCE
+    import googlemaps
+    api_key = os.getenv("GOOGLE_MAPS_API_KEY")
+    if not api_key:
+        st.error("Google Maps API key not found. Please set the GOOGLE_MAPS_API_KEY environment variable.")
+        st.stop()
+    gmaps = googlemaps.Client(key=api_key)
+    directions = gmaps.directions(from_address, to_address, mode="driving")
+    seconds = directions[0]['legs'][0]['duration']['value']
+    st.write(f"Driving from {from_address} to {to_address} took {seconds // 60} minutes")
+    return timedelta(seconds=seconds) + DRIVE_TOLERANCE
 
 # Streamlit UI
 st.title("Delivery Route Scheduler")
@@ -63,7 +63,7 @@ if st.button("Generate Schedule"):
             "Arrival Time": arrival_time.strftime("%I:%M %p"),
             "Delivery Window": f"{arrival_time.strftime('%I:%M %p')} – {(arrival_time + timedelta(hours=4)).strftime('%I:%M %p')}"
         })
-        current_time = arrival_time + STOP_DURATION
+        current_time = max(current_time + STOP_DURATION, arrival_time + STOP_DURATION)
         current_location = stop['Address']
 
     # Add return to origin
